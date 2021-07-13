@@ -1,17 +1,10 @@
+import java.io.*;
+
 public class Main {
-    public static void main(String[] args) {
-        /*double d = Math.sqrt(11);
-        d -= (long)d;
-        d++;
-        System.out.printf("%.30f\n", d);
-        System.out.printf("%a\n", d);
-        long l = Double.doubleToLongBits(d);
-        l <<= 12;
-        int hash = (int)(l >>> 32);
-        System.out.printf("%x", hash);*/
+    public static void main(String[] args) throws IOException {
 
         FileConvertorToHashBySha256 convertor = new FileConvertorToHashBySha256();
-        for (int i = 0; i < 8; i++) {
+        /*for (int i = 0; i < 8; i++) {
             System.out.printf("%x\n", convertor.HashValues[i]);
         }
 
@@ -20,6 +13,11 @@ public class Main {
                 System.out.printf("%x ", convertor.ROUNDED_CONSTANTS[i + j]);
             }
             System.out.println();
-        }
+        }*/
+        //File file = new File("/home/ivan/Programming/Hello World");
+        //byte b = (byte)0b10000000;
+        //b = (byte)(b | 0b01111111);
+        //System.out.println(b);
+        convertor.readBytesFromFile("/home/ivan/Programming/Hello World");
     }
 }

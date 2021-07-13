@@ -1,17 +1,24 @@
+import java.io.*;
+
 public class FileConvertorToHashBySha256 {
 
     public final int SIZE_HASH_VALUES = 8;
     public final int SIZE_QUEUE_MESSAGES = 64;
+    public final int SIZE_PIECE = 512;
     public final int[] ROUNDED_CONSTANTS;
     public final int[] PRIMES;
     private int[] HashValues;
+    private byte[] data;
+    private int lengthData;
 
     FileConvertorToHashBySha256() {
         HashValues = new int[SIZE_HASH_VALUES];
-        PRIMES = generatorOfPrimes(SIZE_QUEUE_MESSAGES);
         ROUNDED_CONSTANTS = new int[SIZE_QUEUE_MESSAGES];
+        PRIMES = generatorOfPrimes(SIZE_QUEUE_MESSAGES);
         hashValuesInit();
         roundedConstantsInit();
+        lengthData = 0;
+        data = null;
     }
 
     private void hashValuesInit() {
@@ -62,5 +69,21 @@ public class FileConvertorToHashBySha256 {
         return primes;
     }
 
+    public void readBytesFromFile(String absolutePath) throws IOException {
 
+        File file = new File(absolutePath);
+        try(FileInputStream fis = new FileInputStream(file);
+            BufferedInputStream bis = new BufferedInputStream(fis)) {
+            lengthData = fis.available();
+            data = new byte[SIZE_QUEUE_MESSAGES *
+                    ((lengthData + SIZE_HASH_VALUES - 1) / SIZE_QUEUE_MESSAGES + 1)];
+            data[11] = (byte)-128; // исправить на data[lengthData]
+            bis.read(data, 0, 11);
+            /*for (int i = 0; i < data.length; i++) {
+                System.out.println(data[i]);
+            }*/
+        } catch (FileNotFoundException e) {
+            throw new IOException();
+        }
+    }
 }
