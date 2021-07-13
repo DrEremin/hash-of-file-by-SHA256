@@ -10,7 +10,11 @@ public class FileConvertorToHashBySha256 {
         HashValues = new int[SIZE_HASH_VALUES];
         PRIMES = generatorOfPrimes(SIZE_QUEUE_MESSAGES);
         ROUNDED_CONSTANTS = new int[SIZE_QUEUE_MESSAGES];
+        hashValuesInit();
+        roundedConstantsInit();
+    }
 
+    private void hashValuesInit() {
         for (int i = 0; i < SIZE_HASH_VALUES; i++) {
             double sqrtOfPrime = Math.sqrt(PRIMES[i]);
             sqrtOfPrime -= (long)sqrtOfPrime;
@@ -19,8 +23,19 @@ public class FileConvertorToHashBySha256 {
             hash <<= 12;
             HashValues[i] = (int)(hash >>> 32);
         }
-
     }
+
+    private void roundedConstantsInit() {
+        for (int i = 0; i < SIZE_QUEUE_MESSAGES; i++) {
+            double cbrtOfPrime = Math.cbrt(PRIMES[i]);
+            cbrtOfPrime -= (long)cbrtOfPrime;
+            cbrtOfPrime++;
+            long hash = Double.doubleToLongBits(cbrtOfPrime);
+            hash <<= 12;
+            ROUNDED_CONSTANTS[i] = (int)(hash >>> 32);
+        }
+    }
+
 
     private int[] generatorOfPrimes(int amountOfPrimes) {
         int[] primes = new int[amountOfPrimes];

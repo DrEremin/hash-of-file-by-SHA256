@@ -14,5 +14,12 @@ public class Main {
         for (int i = 0; i < 8; i++) {
             System.out.printf("%x\n", convertor.HashValues[i]);
         }
+
+        for (int i = 0; i < 64; i += 8) {
+            for (int j = 0; j < 8; j++) {
+                System.out.printf("%x ", convertor.ROUNDED_CONSTANTS[i + j]);
+            }
+            System.out.println();
+        }
     }
 }
