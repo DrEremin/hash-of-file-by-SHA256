@@ -77,13 +77,24 @@ public class FileConvertorToHashBySha256 {
             lengthData = fis.available();
             data = new byte[SIZE_QUEUE_MESSAGES *
                     ((lengthData + SIZE_HASH_VALUES - 1) / SIZE_QUEUE_MESSAGES + 1)];
-            data[11] = (byte)-128; // исправить на data[lengthData]
             bis.read(data, 0, 11);
-            /*for (int i = 0; i < data.length; i++) {
-                System.out.println(data[i]);
-            }*/
         } catch (FileNotFoundException e) {
             throw new IOException();
+        }
+    }
+
+    public void preprocessing() {
+
+        data[11] = (byte)-128; // везде заменить 11 на lengthData
+        long bits = 11 * 8;
+
+        byte[] bytes = new byte[8];
+        for (int i = bytes.length - 1; i >= 0; i--) {
+            bytes[i] = (byte)bits;
+            bits = bits >>> 8;
+        }
+        for (int i = data.length - 1, j = bytes.length - 1; j >= 0; i--, j--) {
+            data[i] = bytes[j];
         }
     }
 }

@@ -19,5 +19,6 @@ public class Main {
         //b = (byte)(b | 0b01111111);
         //System.out.println(b);
         convertor.readBytesFromFile("/home/ivan/Programming/Hello World");
+        convertor.preprocessing();
     }
 }
