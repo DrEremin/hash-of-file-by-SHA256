@@ -4,11 +4,13 @@ import java.util.Arrays;
 
 public class FileConvertorToHashBySha256 {
 
+    public final long MOD = (long)Math.pow(2, 32);
     public final int SIZE_HASH_VALUES = 8;
     public final int SIZE_QUEUE_MESSAGES = 64;
     public final int[] ROUNDED_CONSTANTS;
     public final int[] PRIMES;
     private int[] hashValues;
+    private int[] tempContainers;
     private int[] piece;
     private byte[] data;
     private int lengthData;
@@ -16,6 +18,7 @@ public class FileConvertorToHashBySha256 {
     FileConvertorToHashBySha256() {
 
         hashValues = new int[SIZE_HASH_VALUES];
+        tempContainers = new int[SIZE_HASH_VALUES];
         ROUNDED_CONSTANTS = new int[SIZE_QUEUE_MESSAGES];
         PRIMES = generatorOfPrimes();
         piece = new int[SIZE_QUEUE_MESSAGES];
@@ -113,31 +116,6 @@ public class FileConvertorToHashBySha256 {
         }
     }
 
-    private void createQueueMessages(int startIndex, int endIndex) {
-
-        copyDataToBeginningPieces(startIndex, endIndex);
-        fillingEndElementsPieces();
-        /*for (int i = 0; i < piece.length; i++) {
-            System.out.printf("%d - %x\n", i, piece[i]);
-        }*/
-    }
-
-    private void fillingEndElementsPieces() {
-
-        int s0, s1;
-        long temp;
-
-        for (int i = 16; i < piece.length; i++) {
-            s0 = rightRotate(piece[i - 15], 7)
-                    ^ rightRotate(piece[i - 15], 18)
-                    ^ (piece[i - 15] >>> 3);
-            s1 = rightRotate(piece[i - 2], 17)
-                    ^ rightRotate(piece[i - 2], 19)
-                    ^ (piece[i - 2] >>> 10);
-            temp = piece[i - 16] + s0 + piece[i - 7] + s1;
-            piece[i] = (int)(temp % (long)Math.pow(2, 32));
-        }
-    }
     private void copyDataToBeginningPieces(int startIndex, int endIndex) {
 
         Arrays.fill(piece, 0);
@@ -169,6 +147,78 @@ public class FileConvertorToHashBySha256 {
         return temp2 | temp1;
     }
 
+    private void fillingEndElementsPieces() {
+
+        int s0, s1;
+
+        for (int i = 16; i < piece.length; i++) {
+            s0 = rightRotate(piece[i - 15], 7)
+                    ^ rightRotate(piece[i - 15], 18)
+                    ^ (piece[i - 15] >>> 3);
+            s1 = rightRotate(piece[i - 2], 17)
+                    ^ rightRotate(piece[i - 2], 19)
+                    ^ (piece[i - 2] >>> 10);
+            piece[i] = additionByMod2Pow32(piece[i - 16], s0, piece[i - 7], s1);
+        }
+    }
+
+    private int additionByMod2Pow32(int ... operands) {
+
+        long temp = 0;
+
+        for (int i = 0; i < operands.length; i++) {
+            temp += operands[i];
+        }
+        return (int)(temp % MOD);
+    }
+
+    private void createQueueMessages(int startIndex, int endIndex) {
+
+        copyDataToBeginningPieces(startIndex, endIndex);
+        fillingEndElementsPieces();
+        /*for (int i = 0; i < piece.length; i++) {
+            System.out.printf("%d - %x\n", i, piece[i]);
+        }*/
+    }
+
+    private void compressionCycle() {
+
+        int s0, s1, ch, temp1, temp2, maj;
+
+        for (int i = 0; i < tempContainers.length; i++) {
+            tempContainers[i] = hashValues[i];
+        }
+        for (int i = 0; i < SIZE_QUEUE_MESSAGES; i++) {
+            s1 = rightRotate(tempContainers[4], 6)
+                    ^ rightRotate(tempContainers[4], 11)
+                    ^ rightRotate(tempContainers[4], 25);
+            ch = (tempContainers[4] & tempContainers[5])
+                    ^ ((~tempContainers[4]) & tempContainers[6]);
+            temp1 = tempContainers[7] + s1 + ch + ROUNDED_CONSTANTS[i] + piece[i];
+            s0 = rightRotate(tempContainers[0], 2)
+                    ^ rightRotate(tempContainers[0], 13)
+                    ^ rightRotate(tempContainers[0], 22);
+            maj = (tempContainers[0] & tempContainers[1])
+                    ^ (tempContainers[0] & tempContainers[2])
+                    ^ (tempContainers[1] & tempContainers[2]);
+            temp2 = s0 + maj;
+            tempContainers[7] = tempContainers[6];
+            tempContainers[6] = tempContainers[5];
+            tempContainers[5] = tempContainers[4];
+            tempContainers[4] = tempContainers[3] + temp1;
+            tempContainers[3] = tempContainers[2];
+            tempContainers[2] = tempContainers[1];
+            tempContainers[1] = tempContainers[0];
+            tempContainers[0] = temp1 + temp2;
+        }
+        /*for (int i = 0; i < hashValues.length; i++) {
+            System.out.printf("%d - %x\n", i, hashValues[i]);
+        }
+        for (int i = 0; i < tempContainers.length; i++) {
+            System.out.printf("%d - %x\n", i, tempContainers[i]);
+        }*/
+    }
+
     public BigInteger generateHash(String absolutePath) throws IOException {
 
         readBytesFromFile(absolutePath);
@@ -178,6 +228,7 @@ public class FileConvertorToHashBySha256 {
                 counterPieces++) {
             createQueueMessages((counterPieces) * SIZE_QUEUE_MESSAGES,
                     (counterPieces + 1) * SIZE_QUEUE_MESSAGES - 1);
+            compressionCycle();
         }
         return new BigInteger(data);
     }
