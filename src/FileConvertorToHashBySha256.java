@@ -1,4 +1,5 @@
 import java.io.*;
+import java.math.BigInteger;
 
 public class FileConvertorToHashBySha256 {
 
@@ -8,7 +9,7 @@ public class FileConvertorToHashBySha256 {
     public final int[] ROUNDED_CONSTANTS;
     public final int[] PRIMES;
     private int[] hashValues;
-    private byte[][] queueMessages;
+    private int[][] pieces;
     private byte[] data;
     private int lengthData;
 
@@ -19,8 +20,8 @@ public class FileConvertorToHashBySha256 {
         hashValuesInit();
         roundedConstantsInit();
         lengthData = 0;
-        queueMessages = null;
         data = null;
+        pieces = null;
     }
 
     private void hashValuesInit() {
@@ -71,7 +72,7 @@ public class FileConvertorToHashBySha256 {
         return primes;
     }
 
-    public void readBytesFromFile(String absolutePath) throws IOException {
+    private void readBytesFromFile(String absolutePath) throws IOException {
 
         File file = new File(absolutePath);
         try(FileInputStream fis = new FileInputStream(file);
@@ -79,6 +80,7 @@ public class FileConvertorToHashBySha256 {
             lengthData = fis.available();
             data = new byte[SIZE_QUEUE_MESSAGES *
                     ((lengthData + SIZE_HASH_VALUES - 1) / SIZE_QUEUE_MESSAGES + 1)];
+            pieces = new int[data.length / SIZE_QUEUE_MESSAGES][SIZE_QUEUE_MESSAGES];
             bis.read(data, 0, lengthData);
             lengthData = 11;           //специально обрезал последний байт (убрать в конце разработки)
             data[lengthData] = 0;      //специально обрезал последний байт (убрать в конце разработки)
@@ -87,7 +89,7 @@ public class FileConvertorToHashBySha256 {
         }
     }
 
-    public void preprocessing() {
+    private void preprocessing() {
 
         long bits = lengthData * SIZE_HASH_VALUES;
 
@@ -99,28 +101,39 @@ public class FileConvertorToHashBySha256 {
         }
     }
 
-    public void createQueueMessages() {
+    private void createQueueMessages(int startIndex, int endIndex) {
 
-        try {
-            readBytesFromFile("/home/ivan/Programming/Hello World");
-        } catch(IOException e) {
-
-        }
-        preprocessing();
-
-        queueMessages = new byte[64][4];
-        for (int i = 0; i < queueMessages.length; i++) {
-            for (int j = 0; j < queueMessages[i].length; j++) {
-                queueMessages[i][j] = data[4 * i + j];
+        int numberPiece = (endIndex + 1) / SIZE_QUEUE_MESSAGES - 1;
+        int temp;
+        for (int i = startIndex, j = 1, k = 0; i <= endIndex; i++, j++) {
+            temp = 0;
+            temp |= data[i];
+            temp &= 255;
+            pieces[numberPiece][k] |= temp;
+            if (j == 4) {
+                j = 0;
+                k++;
+            } else {
+                pieces[numberPiece][k] <<= 8;
             }
         }
-
-        for (int i = 0; i < queueMessages.length; i++) {
-            for (int j = 0; j < queueMessages[i].length; j++) {
-                System.out.printf("%5d", queueMessages[i][j]);
-            }
-            System.out.println();
+        for (int i = 0; i < pieces[numberPiece].length; i++) {
+            System.out.printf("%d: %x\n", i, pieces[numberPiece][i]);
         }
+
     }
 
+    public BigInteger generateHash(String absolutePath) throws IOException {
+
+        readBytesFromFile(absolutePath);
+        preprocessing();
+        for (int counterPieces = 0;
+                counterPieces + 1 <= data.length / SIZE_QUEUE_MESSAGES;
+                counterPieces++) {
+            createQueueMessages((counterPieces) * SIZE_QUEUE_MESSAGES,
+                    (counterPieces + 1) * SIZE_QUEUE_MESSAGES - 1);
+        }
+
+        return new BigInteger(data);
+    }
 }
