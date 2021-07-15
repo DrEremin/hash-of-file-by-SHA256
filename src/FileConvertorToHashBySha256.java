@@ -1,23 +1,24 @@
 import java.io.*;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 public class FileConvertorToHashBySha256 {
-
 
     public final int SIZE_HASH_VALUES = 8;
     public final int SIZE_QUEUE_MESSAGES = 64;
     public final int[] ROUNDED_CONSTANTS;
     public final int[] PRIMES;
     private int[] hashValues;
-    private int[] pieces;
+    private int[] piece;
     private byte[] data;
     private int lengthData;
 
     FileConvertorToHashBySha256() {
+
         hashValues = new int[SIZE_HASH_VALUES];
         ROUNDED_CONSTANTS = new int[SIZE_QUEUE_MESSAGES];
-        PRIMES = generatorOfPrimes(SIZE_QUEUE_MESSAGES);
-        pieces = new int[SIZE_QUEUE_MESSAGES];
+        PRIMES = generatorOfPrimes();
+        piece = new int[SIZE_QUEUE_MESSAGES];
         hashValuesInit();
         roundedConstantsInit();
         lengthData = 0;
@@ -25,34 +26,45 @@ public class FileConvertorToHashBySha256 {
     }
 
     private void hashValuesInit() {
+
+        double sqrtOfPrime;
+
         for (int i = 0; i < SIZE_HASH_VALUES; i++) {
-            double sqrtOfPrime = Math.sqrt(PRIMES[i]);
+            sqrtOfPrime = Math.sqrt(PRIMES[i]);
             hashValues[i] = doubleToHash(sqrtOfPrime);
         }
     }
 
     private void roundedConstantsInit() {
+
+        double cbrtOfPrime;
+
         for (int i = 0; i < SIZE_QUEUE_MESSAGES; i++) {
-            double cbrtOfPrime = Math.cbrt(PRIMES[i]);
+            cbrtOfPrime = Math.cbrt(PRIMES[i]);
             ROUNDED_CONSTANTS[i] = doubleToHash(cbrtOfPrime);
         }
     }
 
     private int doubleToHash(double value) {
+
         value -= (long)value;
         value++;
+
         long hash = Double.doubleToLongBits(value);
+
         hash <<= 12;
         return (int)(hash >>> 32);
     }
 
 
-    private int[] generatorOfPrimes(int amountOfPrimes) {
-        int[] primes = new int[amountOfPrimes];
-        primes[0] = 2;
+    private int[] generatorOfPrimes() {
+
+        int[] primes = new int[SIZE_QUEUE_MESSAGES];
         int primesSize = 1;
         boolean flag = false;
-        for (int i = 3, j = 0, number; primesSize < amountOfPrimes; i++, j = 0) {
+
+        primes[0] = 2;
+        for (int i = 3, j = 0, number; primesSize < SIZE_QUEUE_MESSAGES; i++, j = 0) {
             number = (int) Math.sqrt(i);
             while (number >= primes[j]) {
                 if (i % primes[j] == 0) {
@@ -75,6 +87,7 @@ public class FileConvertorToHashBySha256 {
     private void readBytesFromFile(String absolutePath) throws IOException {
 
         File file = new File(absolutePath);
+
         try(FileInputStream fis = new FileInputStream(file);
             BufferedInputStream bis = new BufferedInputStream(fis)) {
             lengthData = fis.available();
@@ -101,41 +114,56 @@ public class FileConvertorToHashBySha256 {
     }
 
     private void createQueueMessages(int startIndex, int endIndex) {
+
+        copyDataToBeginningPieces(startIndex, endIndex);
+        fillingEndElementsPieces();
+        /*for (int i = 0; i < piece.length; i++) {
+            System.out.printf("%d - %x\n", i, piece[i]);
+        }*/
+    }
+
+    private void fillingEndElementsPieces() {
+
+        int s0, s1;
+        long temp;
+
+        for (int i = 16; i < piece.length; i++) {
+            s0 = rightRotate(piece[i - 15], 7)
+                    ^ rightRotate(piece[i - 15], 18)
+                    ^ (piece[i - 15] >>> 3);
+            s1 = rightRotate(piece[i - 2], 17)
+                    ^ rightRotate(piece[i - 2], 19)
+                    ^ (piece[i - 2] >>> 10);
+            temp = piece[i - 16] + s0 + piece[i - 7] + s1;
+            piece[i] = (int)(temp % (long)Math.pow(2, 32));
+        }
+    }
+    private void copyDataToBeginningPieces(int startIndex, int endIndex) {
+
+        Arrays.fill(piece, 0);
         for (int i = startIndex, j = 1, k = 0; i <= endIndex; i++, j++) {
-            pieces[k] |= data[i] & 255;
+            piece[k] |= data[i] & 255;
             if (j == 4) {
                 j = 0;
                 k++;
             } else {
-                pieces[k] <<= 8;
+                piece[k] <<= 8;
             }
-        }
-        int s0, s1;
-        long temp;
-        for (int i = 16; i < pieces.length; i++) {
-            s0 = rightRotate(pieces[i - 15], 7)
-                    ^ rightRotate(pieces[i - 15], 18)
-                    ^ (pieces[i - 15] >>> 3);
-            s1 = rightRotate(pieces[i - 2], 17)
-                    ^ rightRotate(pieces[i - 2], 19)
-                    ^ (pieces[i - 2] >>> 10);
-            temp = pieces[i - 16] + s0 + pieces[i - 7] + s1;
-            pieces[i] = (int)(temp % (long)Math.pow(2, 32));
-        }
-        for (int i = 0; i < pieces.length; i++) {
-            System.out.printf("%d - %x\n", i, pieces[i]);
         }
     }
 
     public int rightRotate(int value, int rotateValue) {
+
         if (rotateValue == 32 || rotateValue <= 0) {
             return 0;
         }
         if (rotateValue > 32) {
             rotateValue -= 32;
         }
+
         int temp1 = value;
         int temp2 = temp1;
+
         temp1 <<= (32 - rotateValue);
         temp2 >>>= rotateValue;
         return temp2 | temp1;
