@@ -9,7 +9,7 @@ public class FileConvertorToHashBySha256 {
     public final int[] ROUNDED_CONSTANTS;
     public final int[] PRIMES;
     private int[] hashValues;
-    private int[][] pieces;
+    private int[] pieces;
     private byte[] data;
     private int lengthData;
 
@@ -17,11 +17,11 @@ public class FileConvertorToHashBySha256 {
         hashValues = new int[SIZE_HASH_VALUES];
         ROUNDED_CONSTANTS = new int[SIZE_QUEUE_MESSAGES];
         PRIMES = generatorOfPrimes(SIZE_QUEUE_MESSAGES);
+        pieces = new int[SIZE_QUEUE_MESSAGES];
         hashValuesInit();
         roundedConstantsInit();
         lengthData = 0;
         data = null;
-        pieces = null;
     }
 
     private void hashValuesInit() {
@@ -80,7 +80,6 @@ public class FileConvertorToHashBySha256 {
             lengthData = fis.available();
             data = new byte[SIZE_QUEUE_MESSAGES *
                     ((lengthData + SIZE_HASH_VALUES - 1) / SIZE_QUEUE_MESSAGES + 1)];
-            pieces = new int[data.length / SIZE_QUEUE_MESSAGES][SIZE_QUEUE_MESSAGES];
             bis.read(data, 0, lengthData);
             lengthData = 11;           //специально обрезал последний байт (убрать в конце разработки)
             data[lengthData] = 0;      //специально обрезал последний байт (убрать в конце разработки)
@@ -91,7 +90,7 @@ public class FileConvertorToHashBySha256 {
 
     private void preprocessing() {
 
-        long bits = lengthData * SIZE_HASH_VALUES;
+        long bits = (long)lengthData * SIZE_HASH_VALUES;
 
         data[lengthData] = (byte)-128;
         for (int i = data.length - 1; i > data.length - 1
@@ -102,25 +101,37 @@ public class FileConvertorToHashBySha256 {
     }
 
     private void createQueueMessages(int startIndex, int endIndex) {
-
-        int numberPiece = (endIndex + 1) / SIZE_QUEUE_MESSAGES - 1;
-        int temp;
         for (int i = startIndex, j = 1, k = 0; i <= endIndex; i++, j++) {
-            temp = 0;
-            temp |= data[i];
-            temp &= 255;
-            pieces[numberPiece][k] |= temp;
+            pieces[k] |= data[i] & 255;
             if (j == 4) {
                 j = 0;
                 k++;
             } else {
-                pieces[numberPiece][k] <<= 8;
+                pieces[k] <<= 8;
             }
         }
-        for (int i = 0; i < pieces[numberPiece].length; i++) {
-            System.out.printf("%d: %x\n", i, pieces[numberPiece][i]);
-        }
+    }
 
+    /*public void rightShift() {
+        int value = 3;
+        int temp;
+        int[] array = new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        for (int i = array.length - value; i < array.length; i++) {
+
+        }
+    }*/
+
+    public void rightRotate(int index, int rotateValue) {
+        if (rotateValue == 32 || rotateValue <= 0) {
+            return;
+        }
+        if (rotateValue > 32) {
+            rotateValue -= 32;
+        }
+        int temp = pieces[index];
+        temp = temp << (32 - rotateValue);
+        pieces[index] = pieces[index] >>> rotateValue;
+        pieces[index] = pieces[index] | temp;
     }
 
     public BigInteger generateHash(String absolutePath) throws IOException {

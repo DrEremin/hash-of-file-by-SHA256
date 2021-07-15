@@ -22,5 +22,6 @@ public class Main {
         //convertor.preprocessing();
         //convertor.createQueueMessages();
         convertor.generateHash("/home/ivan/Programming/Hello World");
+        convertor.rightRotate(1, 18);
     }
 }
