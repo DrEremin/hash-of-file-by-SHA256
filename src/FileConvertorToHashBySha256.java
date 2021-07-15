@@ -2,12 +2,13 @@ import java.io.*;
 
 public class FileConvertorToHashBySha256 {
 
+
     public final int SIZE_HASH_VALUES = 8;
     public final int SIZE_QUEUE_MESSAGES = 64;
-    public final int SIZE_PIECE = 512;
     public final int[] ROUNDED_CONSTANTS;
     public final int[] PRIMES;
     private int[] HashValues;
+    private byte[][] queueMessages;
     private byte[] data;
     private int lengthData;
 
@@ -18,29 +19,30 @@ public class FileConvertorToHashBySha256 {
         hashValuesInit();
         roundedConstantsInit();
         lengthData = 0;
+        queueMessages = null;
         data = null;
     }
 
     private void hashValuesInit() {
         for (int i = 0; i < SIZE_HASH_VALUES; i++) {
             double sqrtOfPrime = Math.sqrt(PRIMES[i]);
-            sqrtOfPrime -= (long)sqrtOfPrime;
-            sqrtOfPrime++;
-            long hash = Double.doubleToLongBits(sqrtOfPrime);
-            hash <<= 12;
-            HashValues[i] = (int)(hash >>> 32);
+            HashValues[i] = doubleToHash(sqrtOfPrime);
         }
     }
 
     private void roundedConstantsInit() {
         for (int i = 0; i < SIZE_QUEUE_MESSAGES; i++) {
             double cbrtOfPrime = Math.cbrt(PRIMES[i]);
-            cbrtOfPrime -= (long)cbrtOfPrime;
-            cbrtOfPrime++;
-            long hash = Double.doubleToLongBits(cbrtOfPrime);
-            hash <<= 12;
-            ROUNDED_CONSTANTS[i] = (int)(hash >>> 32);
+            ROUNDED_CONSTANTS[i] = doubleToHash(cbrtOfPrime);
         }
+    }
+
+    private int doubleToHash(double value) {
+        value -= (long)value;
+        value++;
+        long hash = Double.doubleToLongBits(value);
+        hash <<= 12;
+        return (int)(hash >>> 32);
     }
 
 
@@ -69,7 +71,7 @@ public class FileConvertorToHashBySha256 {
         return primes;
     }
 
-    public void readBytesFromFile(String absolutePath) throws IOException {
+    private void readBytesFromFile(String absolutePath) throws IOException {
 
         File file = new File(absolutePath);
         try(FileInputStream fis = new FileInputStream(file);
@@ -83,7 +85,7 @@ public class FileConvertorToHashBySha256 {
         }
     }
 
-    public void preprocessing() {
+    private void preprocessing() {
 
         data[11] = (byte)-128; // везде заменить 11 на lengthData
         long bits = 11 * 8;
@@ -97,4 +99,29 @@ public class FileConvertorToHashBySha256 {
             data[i] = bytes[j];
         }
     }
+
+    public void createQueueMessages() {
+
+        try {
+            readBytesFromFile("/home/ivan/Programming/Hello World");
+        } catch(IOException e) {
+
+        }
+        preprocessing();
+
+        queueMessages = new byte[64][4];
+        for (int i = 0; i < queueMessages.length; i++) {
+            for (int j = 0; j < queueMessages[i].length; j++) {
+                queueMessages[i][j] = data[4 * i + j];
+            }
+        }
+
+        for (int i = 0; i < queueMessages.length; i++) {
+            for (int j = 0; j < queueMessages[i].length; j++) {
+                System.out.printf("%5d", queueMessages[i][j]);
+            }
+            System.out.println();
+        }
+    }
+
 }
