@@ -7,13 +7,13 @@ public class FileConvertorToHashBySha256 {
     public final int SIZE_QUEUE_MESSAGES = 64;
     public final int[] ROUNDED_CONSTANTS;
     public final int[] PRIMES;
-    private int[] HashValues;
+    private int[] hashValues;
     private byte[][] queueMessages;
     private byte[] data;
     private int lengthData;
 
     FileConvertorToHashBySha256() {
-        HashValues = new int[SIZE_HASH_VALUES];
+        hashValues = new int[SIZE_HASH_VALUES];
         ROUNDED_CONSTANTS = new int[SIZE_QUEUE_MESSAGES];
         PRIMES = generatorOfPrimes(SIZE_QUEUE_MESSAGES);
         hashValuesInit();
@@ -26,7 +26,7 @@ public class FileConvertorToHashBySha256 {
     private void hashValuesInit() {
         for (int i = 0; i < SIZE_HASH_VALUES; i++) {
             double sqrtOfPrime = Math.sqrt(PRIMES[i]);
-            HashValues[i] = doubleToHash(sqrtOfPrime);
+            hashValues[i] = doubleToHash(sqrtOfPrime);
         }
     }
 
@@ -71,7 +71,7 @@ public class FileConvertorToHashBySha256 {
         return primes;
     }
 
-    private void readBytesFromFile(String absolutePath) throws IOException {
+    public void readBytesFromFile(String absolutePath) throws IOException {
 
         File file = new File(absolutePath);
         try(FileInputStream fis = new FileInputStream(file);
@@ -79,24 +79,23 @@ public class FileConvertorToHashBySha256 {
             lengthData = fis.available();
             data = new byte[SIZE_QUEUE_MESSAGES *
                     ((lengthData + SIZE_HASH_VALUES - 1) / SIZE_QUEUE_MESSAGES + 1)];
-            bis.read(data, 0, 11);
+            bis.read(data, 0, lengthData);
+            lengthData = 11;           //специально обрезал последний байт (убрать в конце разработки)
+            data[lengthData] = 0;      //специально обрезал последний байт (убрать в конце разработки)
         } catch (FileNotFoundException e) {
             throw new IOException();
         }
     }
 
-    private void preprocessing() {
+    public void preprocessing() {
 
-        data[11] = (byte)-128; // везде заменить 11 на lengthData
-        long bits = 11 * 8;
+        long bits = lengthData * SIZE_HASH_VALUES;
 
-        byte[] bytes = new byte[8];
-        for (int i = bytes.length - 1; i >= 0; i--) {
-            bytes[i] = (byte)bits;
+        data[lengthData] = (byte)-128;
+        for (int i = data.length - 1; i > data.length - 1
+                - SIZE_HASH_VALUES; i--) {
+            data[i] = (byte)bits;
             bits = bits >>> 8;
-        }
-        for (int i = data.length - 1, j = bytes.length - 1; j >= 0; i--, j--) {
-            data[i] = bytes[j];
         }
     }
 

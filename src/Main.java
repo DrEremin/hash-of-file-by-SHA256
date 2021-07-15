@@ -18,8 +18,8 @@ public class Main {
         //byte b = (byte)0b10000000;
         //b = (byte)(b | 0b01111111);
         //System.out.println(b);
-        //convertor.readBytesFromFile("/home/ivan/Programming/Hello World");
-        //convertor.preprocessing();
+        convertor.readBytesFromFile("/home/ivan/Programming/Hello World");
+        convertor.preprocessing();
         //convertor.createQueueMessages();
     }
 }
