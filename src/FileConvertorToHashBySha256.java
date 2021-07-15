@@ -110,28 +110,35 @@ public class FileConvertorToHashBySha256 {
                 pieces[k] <<= 8;
             }
         }
+        int s0, s1;
+        long temp;
+        for (int i = 16; i < pieces.length; i++) {
+            s0 = rightRotate(pieces[i - 15], 7)
+                    ^ rightRotate(pieces[i - 15], 18)
+                    ^ (pieces[i - 15] >>> 3);
+            s1 = rightRotate(pieces[i - 2], 17)
+                    ^ rightRotate(pieces[i - 2], 19)
+                    ^ (pieces[i - 2] >>> 10);
+            temp = pieces[i - 16] + s0 + pieces[i - 7] + s1;
+            pieces[i] = (int)(temp % (long)Math.pow(2, 32));
+        }
+        for (int i = 0; i < pieces.length; i++) {
+            System.out.printf("%d - %x\n", i, pieces[i]);
+        }
     }
 
-    /*public void rightShift() {
-        int value = 3;
-        int temp;
-        int[] array = new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        for (int i = array.length - value; i < array.length; i++) {
-
-        }
-    }*/
-
-    public void rightRotate(int index, int rotateValue) {
+    public int rightRotate(int value, int rotateValue) {
         if (rotateValue == 32 || rotateValue <= 0) {
-            return;
+            return 0;
         }
         if (rotateValue > 32) {
             rotateValue -= 32;
         }
-        int temp = pieces[index];
-        temp = temp << (32 - rotateValue);
-        pieces[index] = pieces[index] >>> rotateValue;
-        pieces[index] = pieces[index] | temp;
+        int temp1 = value;
+        int temp2 = temp1;
+        temp1 <<= (32 - rotateValue);
+        temp2 >>>= rotateValue;
+        return temp2 | temp1;
     }
 
     public BigInteger generateHash(String absolutePath) throws IOException {
@@ -144,7 +151,6 @@ public class FileConvertorToHashBySha256 {
             createQueueMessages((counterPieces) * SIZE_QUEUE_MESSAGES,
                     (counterPieces + 1) * SIZE_QUEUE_MESSAGES - 1);
         }
-
         return new BigInteger(data);
     }
 }
