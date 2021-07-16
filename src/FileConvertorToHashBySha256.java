@@ -194,22 +194,26 @@ public class FileConvertorToHashBySha256 {
                     ^ rightRotate(tempContainers[4], 25);
             ch = (tempContainers[4] & tempContainers[5])
                     ^ ((~tempContainers[4]) & tempContainers[6]);
-            temp1 = tempContainers[7] + s1 + ch + ROUNDED_CONSTANTS[i] + piece[i];
+            temp1 = additionByMod2Pow32(tempContainers[7],
+                    s1,
+                    ch,
+                    ROUNDED_CONSTANTS[i],
+                    piece[i]);
             s0 = rightRotate(tempContainers[0], 2)
                     ^ rightRotate(tempContainers[0], 13)
                     ^ rightRotate(tempContainers[0], 22);
             maj = (tempContainers[0] & tempContainers[1])
                     ^ (tempContainers[0] & tempContainers[2])
                     ^ (tempContainers[1] & tempContainers[2]);
-            temp2 = s0 + maj;
+            temp2 = additionByMod2Pow32(s0, maj);
             tempContainers[7] = tempContainers[6];
             tempContainers[6] = tempContainers[5];
             tempContainers[5] = tempContainers[4];
-            tempContainers[4] = tempContainers[3] + temp1;
+            tempContainers[4] = additionByMod2Pow32(tempContainers[3], temp1);
             tempContainers[3] = tempContainers[2];
             tempContainers[2] = tempContainers[1];
             tempContainers[1] = tempContainers[0];
-            tempContainers[0] = temp1 + temp2;
+            tempContainers[0] = additionByMod2Pow32(temp1, temp2);
         }
         /*for (int i = 0; i < hashValues.length; i++) {
             System.out.printf("%d - %x\n", i, hashValues[i]);
