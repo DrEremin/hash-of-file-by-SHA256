@@ -97,8 +97,6 @@ public class FileConvertorToHashBySha256 {
             data = new byte[SIZE_QUEUE_MESSAGES *
                     ((lengthData + SIZE_HASH_VALUES - 1) / SIZE_QUEUE_MESSAGES + 1)];
             bis.read(data, 0, lengthData);
-            lengthData = 11;           //специально обрезал последний байт (убрать в конце разработки)
-            data[lengthData] = 0;      //специально обрезал последний байт (убрать в конце разработки)
         } catch (FileNotFoundException e) {
             throw new IOException();
         }
@@ -176,9 +174,6 @@ public class FileConvertorToHashBySha256 {
 
         copyDataToBeginningPieces(startIndex, endIndex);
         fillingEndElementsPieces();
-        /*for (int i = 0; i < piece.length; i++) {
-            System.out.printf("%d - %x\n", i, piece[i]);
-        }*/
     }
 
     private void compressionCycle() {
@@ -215,24 +210,16 @@ public class FileConvertorToHashBySha256 {
             tempContainers[1] = tempContainers[0];
             tempContainers[0] = additionByMOD(temp1, temp2);
         }
-        /*for (int i = 0; i < hashValues.length; i++) {
-            System.out.printf("%d - %x\n", i, hashValues[i]);
-        }
-        for (int i = 0; i < tempContainers.length; i++) {
-            System.out.printf("%d - %x\n", i, tempContainers[i]);
-        }*/
     }
 
     private void changeHashValues() {
+
         for (int i = 0; i < hashValues.length; i++) {
             hashValues[i] = additionByMOD(hashValues[i], tempContainers[i]);
         }
-        /*for (int i = 0; i < hashValues.length; i++) {
-            System.out.printf("%d - %x\n", i, hashValues[i]);
-        }*/
     }
 
-    public BigInteger generateHash(String absolutePath) throws IOException {
+    private void mainCycle(String absolutePath) throws IOException {
 
         readBytesFromFile(absolutePath);
         preprocessing();
@@ -244,6 +231,16 @@ public class FileConvertorToHashBySha256 {
             compressionCycle();
             changeHashValues();
         }
-        return new BigInteger(data);
+    }
+
+    public BigInteger generateHash(String absolutePath) throws IOException {
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        mainCycle(absolutePath);
+        for (int i = 0; i < hashValues.length; i++) {
+            stringBuilder.append(String.format("%X", hashValues[i]));
+        }
+        return new BigInteger(stringBuilder.toString(), 16);
     }
 }
