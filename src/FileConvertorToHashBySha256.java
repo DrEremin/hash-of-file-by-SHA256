@@ -158,11 +158,11 @@ public class FileConvertorToHashBySha256 {
             s1 = rightRotate(piece[i - 2], 17)
                     ^ rightRotate(piece[i - 2], 19)
                     ^ (piece[i - 2] >>> 10);
-            piece[i] = additionByMod2Pow32(piece[i - 16], s0, piece[i - 7], s1);
+            piece[i] = additionByMOD(piece[i - 16], s0, piece[i - 7], s1);
         }
     }
 
-    private int additionByMod2Pow32(int ... operands) {
+    private int additionByMOD(int ... operands) {
 
         long temp = 0;
 
@@ -194,7 +194,7 @@ public class FileConvertorToHashBySha256 {
                     ^ rightRotate(tempContainers[4], 25);
             ch = (tempContainers[4] & tempContainers[5])
                     ^ ((~tempContainers[4]) & tempContainers[6]);
-            temp1 = additionByMod2Pow32(tempContainers[7],
+            temp1 = additionByMOD(tempContainers[7],
                     s1,
                     ch,
                     ROUNDED_CONSTANTS[i],
@@ -205,21 +205,30 @@ public class FileConvertorToHashBySha256 {
             maj = (tempContainers[0] & tempContainers[1])
                     ^ (tempContainers[0] & tempContainers[2])
                     ^ (tempContainers[1] & tempContainers[2]);
-            temp2 = additionByMod2Pow32(s0, maj);
+            temp2 = additionByMOD(s0, maj);
             tempContainers[7] = tempContainers[6];
             tempContainers[6] = tempContainers[5];
             tempContainers[5] = tempContainers[4];
-            tempContainers[4] = additionByMod2Pow32(tempContainers[3], temp1);
+            tempContainers[4] = additionByMOD(tempContainers[3], temp1);
             tempContainers[3] = tempContainers[2];
             tempContainers[2] = tempContainers[1];
             tempContainers[1] = tempContainers[0];
-            tempContainers[0] = additionByMod2Pow32(temp1, temp2);
+            tempContainers[0] = additionByMOD(temp1, temp2);
         }
         /*for (int i = 0; i < hashValues.length; i++) {
             System.out.printf("%d - %x\n", i, hashValues[i]);
         }
         for (int i = 0; i < tempContainers.length; i++) {
             System.out.printf("%d - %x\n", i, tempContainers[i]);
+        }*/
+    }
+
+    private void changeHashValues() {
+        for (int i = 0; i < hashValues.length; i++) {
+            hashValues[i] = additionByMOD(hashValues[i], tempContainers[i]);
+        }
+        /*for (int i = 0; i < hashValues.length; i++) {
+            System.out.printf("%d - %x\n", i, hashValues[i]);
         }*/
     }
 
@@ -233,6 +242,7 @@ public class FileConvertorToHashBySha256 {
             createQueueMessages((counterPieces) * SIZE_QUEUE_MESSAGES,
                     (counterPieces + 1) * SIZE_QUEUE_MESSAGES - 1);
             compressionCycle();
+            changeHashValues();
         }
         return new BigInteger(data);
     }
