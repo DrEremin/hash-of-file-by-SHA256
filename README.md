@@ -1,5 +1,6 @@
 # hash-of-file-by-sh256
 ***
+
 ##Description
 This project implements file hashing using the sha-256 algorithm. All<br>
 functionality is represented only FileConverterToHashBySha256 class. In<br>
@@ -7,6 +8,7 @@ order to carry out hashing, you need to create an object of this class and<br>
 simply pass the absolute path to the desired file to the generateOur() method<br>
 of this object. The result will be returned as a BigInteger.<br>
 ***
+
 ##Steps of hashing
 1. When an object of class FileConvertorToHashBySha256 is created, the<br> 
 following steps are taken:<br>
