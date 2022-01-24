@@ -1,4 +1,4 @@
-# hash-of-file-by-sh256
+# hash-of-file-by-sha256
 
 ***
 
