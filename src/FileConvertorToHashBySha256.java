@@ -28,6 +28,11 @@ public class FileConvertorToHashBySha256 {
         data = null;
     }
 
+    /**
+     * This method fill the array hashValues[] hashes
+     * from square roots first 8 primes
+     */
+
     private void hashValuesInit() {
 
         double sqrtOfPrime;
@@ -38,6 +43,11 @@ public class FileConvertorToHashBySha256 {
         }
     }
 
+    /**
+     * This method fill the array ROUNDED_CONSTANTS[] hashes
+     * from square roots first 64 primes
+     */
+
     private void roundedConstantsInit() {
 
         double cbrtOfPrime;
@@ -47,6 +57,12 @@ public class FileConvertorToHashBySha256 {
             ROUNDED_CONSTANTS[i] = doubleToHash(cbrtOfPrime);
         }
     }
+
+    /**
+     * This method generate a hash on base a fraction part of the double argument
+     * @param value double argument for getting the hash
+     * @return hash value
+     */
 
     private int doubleToHash(double value) {
 
@@ -59,6 +75,10 @@ public class FileConvertorToHashBySha256 {
         return (int)(hash >>> 32);
     }
 
+    /**
+     * This method create the array from 64 primes
+     * @return array of primes
+     */
 
     private int[] generatorOfPrimes() {
 
@@ -87,6 +107,15 @@ public class FileConvertorToHashBySha256 {
         return primes;
     }
 
+    /**
+     * This method read bytes from the file and write it's to the array data[]
+     * This method also makes sure that the total number of bits of information
+     * is a multiple of 512, but without trimming the data, i.e. by adding zero
+     * bits to the end.
+     * @param absolutePath the absolute path of the file
+     * @throws IOException if file not find
+     */
+
     private void readBytesFromFile(String absolutePath) throws IOException {
 
         File file = new File(absolutePath);
@@ -102,6 +131,11 @@ public class FileConvertorToHashBySha256 {
         }
     }
 
+    /**
+     * This method writes the length of all data (bits) to the last 64 bits
+     * of byte array data[].
+     */
+
     private void preprocessing() {
 
         long bits = (long)lengthData * SIZE_HASH_VALUES;
@@ -113,6 +147,13 @@ public class FileConvertorToHashBySha256 {
             bits = bits >>> 8;
         }
     }
+
+    /**
+     * This method copies into each element of the 32-bit piece[] array by
+     * 4 bytes from the data[] array piece.
+     * @param startIndex is index of the initial element of array data[]
+     * @param endIndex is index of the end element of array data[]
+     */
 
     private void copyDataToBeginningPieces(int startIndex, int endIndex) {
 
@@ -145,6 +186,11 @@ public class FileConvertorToHashBySha256 {
         return temp2 | temp1;
     }
 
+    /**
+     * This method modifies the last 48 elements of a 32-bit piece[]
+     * array in a special way, using the first 16 elements.
+     */
+
     private void fillingEndElementsPieces() {
 
         int s0, s1;
@@ -170,11 +216,23 @@ public class FileConvertorToHashBySha256 {
         return (int)(temp % MOD);
     }
 
+    /**
+     * This method creates a message queue (32 bit array of 64 elements)
+     * encoded in a special way.
+     * @param startIndex is index of the initial element of array data[]
+     * @param endIndex is index of the end element of array data[]
+     */
+
     private void createQueueMessages(int startIndex, int endIndex) {
 
         copyDataToBeginningPieces(startIndex, endIndex);
         fillingEndElementsPieces();
     }
+
+    /**
+     * This method writes the hash values to the tempContainers[]
+     * array of integers. Then these values are changed in a special way.
+     */
 
     private void compressionCycle() {
 
@@ -212,12 +270,24 @@ public class FileConvertorToHashBySha256 {
         }
     }
 
+    /**
+     * This method modifies the hash values in the hashValues[] array by adding
+     * to these hashes to the elements of the tempContainers[] array modulo 2^32.
+     */
+
     private void changeHashValues() {
 
         for (int i = 0; i < hashValues.length; i++) {
             hashValues[i] = additionByMOD(hashValues[i], tempContainers[i]);
         }
     }
+
+    /**
+     * This method reads data from the specified file and changes 8 hash values
+     * based on this data. Ultimately, these hashes composed together will be
+     * the hashcode of the file by the sha-256 algorithm.
+     * @param absolutePath is absolute path to file for heshing
+     */
 
     private void mainCycle(String absolutePath) throws IOException {
 
@@ -233,13 +303,24 @@ public class FileConvertorToHashBySha256 {
         }
     }
 
+    /**
+     * This method join together the modified hashes from the hashValues[]
+     * array into a BigInteger variable in hexadecimal notation.
+     * @param absolutePath is absolute path to file for heshing
+     */
+
     public BigInteger generateHash(String absolutePath) throws IOException {
 
         StringBuilder stringBuilder = new StringBuilder();
+        String str;
 
         mainCycle(absolutePath);
         for (int i = 0; i < hashValues.length; i++) {
-            stringBuilder.append(String.format("%X", hashValues[i]));
+            str = String.format("%X", hashValues[i]);
+            while (str.length() < 8) {
+                str = "0" + str;
+            }
+            stringBuilder.append(str);
         }
         return new BigInteger(stringBuilder.toString(), 16);
     }
